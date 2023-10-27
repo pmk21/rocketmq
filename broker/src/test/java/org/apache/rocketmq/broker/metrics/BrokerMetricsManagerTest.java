@@ -20,8 +20,15 @@ package org.apache.rocketmq.broker.metrics;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
+import org.apache.rocketmq.common.attribute.TopicMessageType;
+import org.apache.rocketmq.common.message.Message;
+import org.apache.rocketmq.common.message.MessageAccessor;
+import org.apache.rocketmq.common.message.MessageConst;
+import org.apache.rocketmq.common.message.MessageDecoder;
+import org.apache.rocketmq.remoting.protocol.header.SendMessageRequestHeader;
 import org.junit.Test;
 
+import static org.apache.rocketmq.broker.metrics.BrokerMetricsManager.getMessageType;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class BrokerMetricsManagerTest {
@@ -64,5 +71,40 @@ public class BrokerMetricsManagerTest {
             .build();
         assertThat(attributes.get(AttributeKey.stringKey("a"))).isEqualTo("b");
         assertThat(attributes.get(AttributeKey.stringKey("customized"))).isEqualTo("value");
+    }
+
+    @Test
+    public void testGetMessageTypeNormal() {
+        String topic = "topic";
+        Message message = new Message(topic, "123".getBytes());
+        SendMessageRequestHeader sendMessageRequestHeader = new SendMessageRequestHeader();
+
+        sendMessageRequestHeader.setTopic(topic);
+        sendMessageRequestHeader.setDefaultTopic("");
+        sendMessageRequestHeader.setDefaultTopicQueueNums(0);
+        sendMessageRequestHeader.setQueueId(0);
+        sendMessageRequestHeader.setSysFlag(0);
+        sendMessageRequestHeader.setBname("test");
+        sendMessageRequestHeader.setProperties(MessageDecoder.messageProperties2String(message.getProperties()));
+
+        assertThat(getMessageType(sendMessageRequestHeader)).isEqualTo(TopicMessageType.NORMAL);
+    }
+
+    @Test
+    public void testGetMessageTypeTransaction() {
+        String topic = "topic";
+        Message message = new Message(topic, "123".getBytes());
+        SendMessageRequestHeader sendMessageRequestHeader = new SendMessageRequestHeader();
+
+        MessageAccessor.putProperty(message, MessageConst.PROPERTY_TRANSACTION_PREPARED, "true");
+        sendMessageRequestHeader.setTopic(topic);
+        sendMessageRequestHeader.setDefaultTopic("");
+        sendMessageRequestHeader.setDefaultTopicQueueNums(0);
+        sendMessageRequestHeader.setQueueId(0);
+        sendMessageRequestHeader.setSysFlag(0);
+        sendMessageRequestHeader.setBname("test");
+        sendMessageRequestHeader.setProperties(MessageDecoder.messageProperties2String(message.getProperties()));
+
+        assertThat(getMessageType(sendMessageRequestHeader)).isEqualTo(TopicMessageType.TRANSACTION);
     }
 }
