@@ -107,4 +107,25 @@ public class BrokerMetricsManagerTest {
 
         assertThat(getMessageType(sendMessageRequestHeader)).isEqualTo(TopicMessageType.TRANSACTION);
     }
+
+    @Test
+    public void testGetMessageTypeDelay() {
+        String topic = "topic";
+        Message message = new Message(topic, "123".getBytes());
+        SendMessageRequestHeader sendMessageRequestHeader = new SendMessageRequestHeader();
+
+        message.putUserProperty("__STARTDELIVERTIME", "1");
+        message.setDelayTimeLevel(1);
+        message.setDelayTimeMs(1);
+        message.setDelayTimeSec(1);
+        sendMessageRequestHeader.setTopic(topic);
+        sendMessageRequestHeader.setDefaultTopic("");
+        sendMessageRequestHeader.setDefaultTopicQueueNums(0);
+        sendMessageRequestHeader.setQueueId(0);
+        sendMessageRequestHeader.setSysFlag(0);
+        sendMessageRequestHeader.setBname("test");
+        sendMessageRequestHeader.setProperties(MessageDecoder.messageProperties2String(message.getProperties()));
+
+        assertThat(getMessageType(sendMessageRequestHeader)).isEqualTo(TopicMessageType.DELAY);
+    }
 }
