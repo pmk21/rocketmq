@@ -232,18 +232,7 @@ public class TopicQueueMappingCleanService extends ServiceThread {
                         log.warn("The TopicQueueMappingDetail [{}] should not exist in this broker", mappingDetail);
                         continue;
                     }
-                    Map<Integer, String> qid2CurrLeaderBroker = new HashMap<>();
-                    for (Map.Entry<Integer, List<LogicQueueMappingItem>> entry : mappingDetail.getHostedQueues().entrySet()) {
-                        Integer qId = entry.getKey();
-                        List<LogicQueueMappingItem> items = entry.getValue();
-                        if (items.isEmpty()) {
-                            continue;
-                        }
-                        LogicQueueMappingItem leaderItem = items.get(items.size() - 1);
-                        if (!leaderItem.getBname().equals(mappingDetail.getBname())) {
-                            qid2CurrLeaderBroker.put(qId, leaderItem.getBname());
-                        }
-                    }
+                    Map<Integer, String> qid2CurrLeaderBroker = getQid2CurrLeaderBrokerMap(mappingDetail);
                     if (qid2CurrLeaderBroker.isEmpty()) {
                         continue;
                     }
@@ -330,7 +319,21 @@ public class TopicQueueMappingCleanService extends ServiceThread {
         }
     }
 
-
+    private Map<Integer, String> getQid2CurrLeaderBrokerMap(TopicQueueMappingDetail mappingDetail) {
+        Map<Integer, String> qid2CurrLeaderBroker = new HashMap<>();
+        for (Map.Entry<Integer, List<LogicQueueMappingItem>> entry : mappingDetail.getHostedQueues().entrySet()) {
+            Integer qId = entry.getKey();
+            List<LogicQueueMappingItem> items = entry.getValue();
+            if (items.isEmpty()) {
+                continue;
+            }
+            LogicQueueMappingItem leaderItem = items.get(items.size() - 1);
+            if (!leaderItem.getBname().equals(mappingDetail.getBname())) {
+                qid2CurrLeaderBroker.put(qId, leaderItem.getBname());
+            }
+        }
+        return qid2CurrLeaderBroker;
+    }
 
 
 }
