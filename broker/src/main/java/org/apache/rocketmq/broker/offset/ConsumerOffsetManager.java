@@ -389,8 +389,12 @@ public class ConsumerOffsetManager extends ConfigManager {
         }
     }
 
+    private boolean checkAssignResetOffsetArgsValid(String topic, String group, int queueId, long offset) {
+        return (Strings.isNullOrEmpty(topic) || Strings.isNullOrEmpty(group) || queueId < 0 || offset < 0);
+    }
+
     public void assignResetOffset(String topic, String group, int queueId, long offset) {
-        if (Strings.isNullOrEmpty(topic) || Strings.isNullOrEmpty(group) || queueId < 0 || offset < 0) {
+        if (checkAssignResetOffsetArgsValid(topic, group, queueId, offset)) {
             LOG.warn("Illegal arguments when assigning reset offset. Topic={}, group={}, queueId={}, offset={}",
                 topic, group, queueId, offset);
             return;
