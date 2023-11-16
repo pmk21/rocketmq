@@ -100,20 +100,22 @@ public class ControllerRequestProcessor implements NettyRequestProcessor {
                 .build();
             ControllerMetricsManager.requestLatency.record(stopwatch.elapsed(TimeUnit.MICROSECONDS), attributes);
             return resp;
-        } catch (Exception e) {
+        } catch (TimeoutException e) {
             log.error("process request: {} error, ", request, e);
             Attributes attributes;
-            if (e instanceof TimeoutException) {
-                attributes = ControllerMetricsManager.newAttributesBuilder()
+            attributes = ControllerMetricsManager.newAttributesBuilder()
                     .put(LABEL_REQUEST_TYPE, ControllerMetricsConstant.RequestType.getLowerCaseNameByCode(request.getCode()))
                     .put(LABEL_REQUEST_HANDLE_STATUS, ControllerMetricsConstant.RequestHandleStatus.TIMEOUT.getLowerCaseName())
                     .build();
-            } else {
-                attributes = ControllerMetricsManager.newAttributesBuilder()
+            ControllerMetricsManager.requestTotal.add(1, attributes);
+            throw e;
+        } catch (Exception e) {
+            log.error("process request: {} error, ", request, e);
+            Attributes attributes;
+            attributes = ControllerMetricsManager.newAttributesBuilder()
                     .put(LABEL_REQUEST_TYPE, ControllerMetricsConstant.RequestType.getLowerCaseNameByCode(request.getCode()))
                     .put(LABEL_REQUEST_HANDLE_STATUS, ControllerMetricsConstant.RequestHandleStatus.FAILED.getLowerCaseName())
                     .build();
-            }
             ControllerMetricsManager.requestTotal.add(1, attributes);
             throw e;
         }
