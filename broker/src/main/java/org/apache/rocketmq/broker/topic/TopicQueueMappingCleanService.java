@@ -122,17 +122,7 @@ public class TopicQueueMappingCleanService extends ServiceThread {
                         log.warn("The TopicQueueMappingDetail [{}] should not exist in this broker", mappingDetail);
                         continue;
                     }
-                    Set<String> brokers = new HashSet<>();
-                    for (List<LogicQueueMappingItem> items: mappingDetail.getHostedQueues().values()) {
-                        if (items.size() <= 1) {
-                            continue;
-                        }
-                        if (!TopicQueueMappingUtils.checkIfLeader(items, mappingDetail)) {
-                            continue;
-                        }
-                        LogicQueueMappingItem earlistItem = items.get(0);
-                        brokers.add(earlistItem.getBname());
-                    }
+                    Set<String> brokers = getBrokersSet(mappingDetail);
                     Map<String, TopicStatsTable> statsTable = new HashMap<>();
                     for (String broker: brokers) {
                         GetTopicStatsInfoRequestHeader header = new GetTopicStatsInfoRequestHeader();
@@ -335,5 +325,19 @@ public class TopicQueueMappingCleanService extends ServiceThread {
         return qid2CurrLeaderBroker;
     }
 
+    private Set<String> getBrokersSet(TopicQueueMappingDetail mappingDetail) {
+        Set<String> brokers = new HashSet<>();
+        for (List<LogicQueueMappingItem> items: mappingDetail.getHostedQueues().values()) {
+            if (items.size() <= 1) {
+                continue;
+            }
+            if (!TopicQueueMappingUtils.checkIfLeader(items, mappingDetail)) {
+                continue;
+            }
+            LogicQueueMappingItem earlistItem = items.get(0);
+            brokers.add(earlistItem.getBname());
+        }
 
+        return brokers;
+    }
 }
