@@ -151,56 +151,11 @@ public class BrokerPreOnlineService extends ServiceThread {
 
     private boolean syncMetadataReverse(String brokerAddr) {
         try {
-            LOGGER.info("Get metadata reverse from {}", brokerAddr);
-
-            String delayOffset = this.brokerController.getBrokerOuterAPI().getAllDelayOffset(brokerAddr);
-            DelayOffsetSerializeWrapper delayOffsetSerializeWrapper =
-                DelayOffsetSerializeWrapper.fromJson(delayOffset, DelayOffsetSerializeWrapper.class);
-
-            ConsumerOffsetSerializeWrapper consumerOffsetSerializeWrapper = this.brokerController.getBrokerOuterAPI().getAllConsumerOffset(brokerAddr);
-
-            TimerCheckpoint timerCheckpoint = this.brokerController.getBrokerOuterAPI().getTimerCheckPoint(brokerAddr);
-
-            if (null != consumerOffsetSerializeWrapper && brokerController.getConsumerOffsetManager().getDataVersion().compare(consumerOffsetSerializeWrapper.getDataVersion()) <= 0) {
-                LOGGER.info("{}'s consumerOffset data version is larger than master broker, {}'s consumerOffset will be used.", brokerAddr, brokerAddr);
-                this.brokerController.getConsumerOffsetManager().getOffsetTable()
-                    .putAll(consumerOffsetSerializeWrapper.getOffsetTable());
-                this.brokerController.getConsumerOffsetManager().getDataVersion().assignNewOne(consumerOffsetSerializeWrapper.getDataVersion());
-                this.brokerController.getConsumerOffsetManager().persist();
-            }
-
-            if (null != delayOffset && brokerController.getScheduleMessageService().getDataVersion().compare(delayOffsetSerializeWrapper.getDataVersion()) <= 0) {
-                LOGGER.info("{}'s scheduleMessageService data version is larger than master broker, {}'s delayOffset will be used.", brokerAddr, brokerAddr);
-                String fileName =
-                    StorePathConfigHelper.getDelayOffsetStorePath(this.brokerController
-                        .getMessageStoreConfig().getStorePathRootDir());
-                try {
-                    MixAll.string2File(delayOffset, fileName);
-                    this.brokerController.getScheduleMessageService().load();
-                } catch (IOException e) {
-                    LOGGER.error("Persist file Exception, {}", fileName, e);
-                }
-            }
-
-            if (null != this.brokerController.getTimerCheckpoint() && this.brokerController.getTimerCheckpoint().getDataVersion().compare(timerCheckpoint.getDataVersion()) <= 0) {
-                LOGGER.info("{}'s timerCheckpoint data version is larger than master broker, {}'s timerCheckpoint will be used.", brokerAddr, brokerAddr);
-                this.brokerController.getTimerCheckpoint().setLastReadTimeMs(timerCheckpoint.getLastReadTimeMs());
-                this.brokerController.getTimerCheckpoint().setMasterTimerQueueOffset(timerCheckpoint.getMasterTimerQueueOffset());
-                this.brokerController.getTimerCheckpoint().getDataVersion().assignNewOne(timerCheckpoint.getDataVersion());
-                this.brokerController.getTimerCheckpoint().flush();
-            }
-
-            for (BrokerAttachedPlugin brokerAttachedPlugin : brokerController.getBrokerAttachedPlugins()) {
-                if (brokerAttachedPlugin != null) {
-                    brokerAttachedPlugin.syncMetadataReverse(brokerAddr);
-                }
-            }
-
+            brokerController.syncMetadataReverse(brokerAddr);
         } catch (Exception e) {
             LOGGER.error("GetMetadataReverse Failed", e);
             return false;
         }
-
         return true;
     }
 

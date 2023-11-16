@@ -90,6 +90,7 @@ import org.apache.rocketmq.broker.processor.QueryAssignmentProcessor;
 import org.apache.rocketmq.broker.processor.QueryMessageProcessor;
 import org.apache.rocketmq.broker.processor.ReplyMessageProcessor;
 import org.apache.rocketmq.broker.processor.SendMessageProcessor;
+import org.apache.rocketmq.broker.schedule.DelayOffsetSerializeWrapper;
 import org.apache.rocketmq.broker.schedule.ScheduleMessageService;
 import org.apache.rocketmq.broker.slave.SlaveSynchronize;
 import org.apache.rocketmq.broker.subscription.LmqSubscriptionGroupManager;
@@ -142,6 +143,7 @@ import org.apache.rocketmq.remoting.protocol.NamespaceUtil;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.protocol.body.BrokerMemberGroup;
+import org.apache.rocketmq.remoting.protocol.body.ConsumerOffsetSerializeWrapper;
 import org.apache.rocketmq.remoting.protocol.body.TopicConfigAndMappingSerializeWrapper;
 import org.apache.rocketmq.remoting.protocol.body.TopicConfigSerializeWrapper;
 import org.apache.rocketmq.remoting.protocol.namesrv.RegisterBrokerResult;
@@ -155,6 +157,7 @@ import org.apache.rocketmq.store.PutMessageResult;
 import org.apache.rocketmq.store.RocksDBMessageStore;
 import org.apache.rocketmq.store.config.BrokerRole;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
+import org.apache.rocketmq.store.config.StorePathConfigHelper;
 import org.apache.rocketmq.store.dledger.DLedgerCommitLog;
 import org.apache.rocketmq.store.hook.PutMessageHook;
 import org.apache.rocketmq.store.hook.SendMessageBackHook;
@@ -2417,5 +2420,51 @@ public class BrokerController {
 
     public void setColdDataCgCtrService(ColdDataCgCtrService coldDataCgCtrService) {
         this.coldDataCgCtrService = coldDataCgCtrService;
+    }
+
+    public void syncMetadataReverse(String brokerAddr) throws Exception {
+        LOG.info("Get metadata reverse from {}", brokerAddr);
+
+        String delayOffset = getBrokerOuterAPI().getAllDelayOffset(brokerAddr);
+        DelayOffsetSerializeWrapper delayOffsetSerializeWrapper =
+                DelayOffsetSerializeWrapper.fromJson(delayOffset, DelayOffsetSerializeWrapper.class);
+
+        ConsumerOffsetSerializeWrapper consumerOffsetSerializeWrapper = getBrokerOuterAPI().getAllConsumerOffset(brokerAddr);
+
+        TimerCheckpoint timerCheckpoint = getBrokerOuterAPI().getTimerCheckPoint(brokerAddr);
+
+        if (null != consumerOffsetSerializeWrapper && getConsumerOffsetManager().getDataVersion().compare(consumerOffsetSerializeWrapper.getDataVersion()) <= 0) {
+            LOG.info("{}'s consumerOffset data version is larger than master broker, {}'s consumerOffset will be used.", brokerAddr, brokerAddr);
+            getConsumerOffsetManager().getOffsetTable()
+                    .putAll(consumerOffsetSerializeWrapper.getOffsetTable());
+            getConsumerOffsetManager().getDataVersion().assignNewOne(consumerOffsetSerializeWrapper.getDataVersion());
+            getConsumerOffsetManager().persist();
+        }
+
+        if (null != delayOffset && getScheduleMessageService().getDataVersion().compare(delayOffsetSerializeWrapper.getDataVersion()) <= 0) {
+            LOG.info("{}'s scheduleMessageService data version is larger than master broker, {}'s delayOffset will be used.", brokerAddr, brokerAddr);
+            String fileName =
+                    StorePathConfigHelper.getDelayOffsetStorePath(getMessageStoreConfig().getStorePathRootDir());
+            try {
+                MixAll.string2File(delayOffset, fileName);
+                getScheduleMessageService().load();
+            } catch (IOException e) {
+                LOG.error("Persist file Exception, {}", fileName, e);
+            }
+        }
+
+        if (null != getTimerCheckpoint() && getTimerCheckpoint().getDataVersion().compare(timerCheckpoint.getDataVersion()) <= 0) {
+            LOG.info("{}'s timerCheckpoint data version is larger than master broker, {}'s timerCheckpoint will be used.", brokerAddr, brokerAddr);
+            getTimerCheckpoint().setMasterTimerQueueOffset(timerCheckpoint.getMasterTimerQueueOffset());
+            getTimerCheckpoint().setLastReadTimeMs(timerCheckpoint.getLastReadTimeMs());
+            getTimerCheckpoint().getDataVersion().assignNewOne(timerCheckpoint.getDataVersion());
+            getTimerCheckpoint().flush();
+        }
+
+        for (BrokerAttachedPlugin brokerAttachedPlugin : getBrokerAttachedPlugins()) {
+            if (brokerAttachedPlugin != null) {
+                brokerAttachedPlugin.syncMetadataReverse(brokerAddr);
+            }
+        }
     }
 }
