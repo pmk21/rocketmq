@@ -58,34 +58,16 @@ public class BrokerConfig extends BrokerIdentity {
     private boolean autoCreateSubscriptionGroup = true;
     private String messageStorePlugIn = "";
 
-    private static final int PROCESSOR_NUMBER = Runtime.getRuntime().availableProcessors();
+    public static final int PROCESSOR_NUMBER = Runtime.getRuntime().availableProcessors();
     @ImportantField
     private String msgTraceTopicName = TopicValidator.RMQ_SYS_TRACE_TOPIC;
     @ImportantField
     private boolean traceTopicEnable = false;
-    /**
-     * thread numbers for send message thread pool.
-     */
-    private int sendMessageThreadPoolNums = Math.min(PROCESSOR_NUMBER, 4);
-    private int putMessageFutureThreadPoolNums = Math.min(PROCESSOR_NUMBER, 4);
-    private int pullMessageThreadPoolNums = 16 + PROCESSOR_NUMBER * 2;
-    private int litePullMessageThreadPoolNums = 16 + PROCESSOR_NUMBER * 2;
-    private int ackMessageThreadPoolNums = 3;
-    private int processReplyMessageThreadPoolNums = 16 + PROCESSOR_NUMBER * 2;
-    private int queryMessageThreadPoolNums = 8 + PROCESSOR_NUMBER;
-
-    private int adminBrokerThreadPoolNums = 16;
-    private int clientManageThreadPoolNums = 32;
-    private int consumerManageThreadPoolNums = 32;
-    private int loadBalanceProcessorThreadPoolNums = 32;
-    private int heartbeatThreadPoolNums = Math.min(32, PROCESSOR_NUMBER);
-    private int recoverThreadPoolNums = 32;
 
     /**
-     * Thread numbers for EndTransactionProcessor
+     * Thread numbers for send message thread pool and EndTransactionProcessor.
      */
-    private int endTransactionThreadPoolNums = Math.max(8 + PROCESSOR_NUMBER * 2,
-            sendMessageThreadPoolNums * 4);
+    private BrokerThreadNumbersConfig brokerThreadNumbersConfig;
 
     private int flushConsumerOffsetInterval = 1000 * 5;
 
@@ -677,59 +659,59 @@ public class BrokerConfig extends BrokerIdentity {
     }
 
     public int getSendMessageThreadPoolNums() {
-        return sendMessageThreadPoolNums;
+        return brokerThreadNumbersConfig.getSendMessageThreadPoolNums();
     }
 
     public void setSendMessageThreadPoolNums(int sendMessageThreadPoolNums) {
-        this.sendMessageThreadPoolNums = sendMessageThreadPoolNums;
+        this.brokerThreadNumbersConfig.setSendMessageThreadPoolNums(sendMessageThreadPoolNums);
     }
 
     public int getPutMessageFutureThreadPoolNums() {
-        return putMessageFutureThreadPoolNums;
+        return brokerThreadNumbersConfig.getPutMessageFutureThreadPoolNums();
     }
 
     public void setPutMessageFutureThreadPoolNums(int putMessageFutureThreadPoolNums) {
-        this.putMessageFutureThreadPoolNums = putMessageFutureThreadPoolNums;
+        this.brokerThreadNumbersConfig.setPutMessageFutureThreadPoolNums(putMessageFutureThreadPoolNums);
     }
 
     public int getPullMessageThreadPoolNums() {
-        return pullMessageThreadPoolNums;
+        return brokerThreadNumbersConfig.getPullMessageThreadPoolNums();
     }
 
     public void setPullMessageThreadPoolNums(int pullMessageThreadPoolNums) {
-        this.pullMessageThreadPoolNums = pullMessageThreadPoolNums;
+        this.brokerThreadNumbersConfig.setPullMessageThreadPoolNums(pullMessageThreadPoolNums);
     }
 
     public int getAckMessageThreadPoolNums() {
-        return ackMessageThreadPoolNums;
+        return brokerThreadNumbersConfig.getAckMessageThreadPoolNums();
     }
 
     public void setAckMessageThreadPoolNums(int ackMessageThreadPoolNums) {
-        this.ackMessageThreadPoolNums = ackMessageThreadPoolNums;
+        this.brokerThreadNumbersConfig.setAckMessageThreadPoolNums(ackMessageThreadPoolNums);
     }
 
     public int getProcessReplyMessageThreadPoolNums() {
-        return processReplyMessageThreadPoolNums;
+        return brokerThreadNumbersConfig.getProcessReplyMessageThreadPoolNums();
     }
 
     public void setProcessReplyMessageThreadPoolNums(int processReplyMessageThreadPoolNums) {
-        this.processReplyMessageThreadPoolNums = processReplyMessageThreadPoolNums;
+        this.brokerThreadNumbersConfig.setProcessReplyMessageThreadPoolNums(processReplyMessageThreadPoolNums);
     }
 
     public int getQueryMessageThreadPoolNums() {
-        return queryMessageThreadPoolNums;
+        return brokerThreadNumbersConfig.getQueryMessageThreadPoolNums();
     }
 
     public void setQueryMessageThreadPoolNums(final int queryMessageThreadPoolNums) {
-        this.queryMessageThreadPoolNums = queryMessageThreadPoolNums;
+        this.brokerThreadNumbersConfig.setQueryMessageThreadPoolNums(queryMessageThreadPoolNums);
     }
 
     public int getAdminBrokerThreadPoolNums() {
-        return adminBrokerThreadPoolNums;
+        return brokerThreadNumbersConfig.getAdminBrokerThreadPoolNums();
     }
 
     public void setAdminBrokerThreadPoolNums(int adminBrokerThreadPoolNums) {
-        this.adminBrokerThreadPoolNums = adminBrokerThreadPoolNums;
+        this.brokerThreadNumbersConfig.setAdminBrokerThreadPoolNums(adminBrokerThreadPoolNums);
     }
 
     public int getFlushConsumerOffsetInterval() {
@@ -797,11 +779,11 @@ public class BrokerConfig extends BrokerIdentity {
     }
 
     public int getLitePullMessageThreadPoolNums() {
-        return litePullMessageThreadPoolNums;
+        return brokerThreadNumbersConfig.getLitePullMessageThreadPoolNums();
     }
 
     public void setLitePullMessageThreadPoolNums(int litePullMessageThreadPoolNums) {
-        this.litePullMessageThreadPoolNums = litePullMessageThreadPoolNums;
+        this.brokerThreadNumbersConfig.setLitePullMessageThreadPoolNums(litePullMessageThreadPoolNums);
     }
 
     public int getLitePullThreadPoolQueueCapacity() {
@@ -957,11 +939,11 @@ public class BrokerConfig extends BrokerIdentity {
     }
 
     public int getClientManageThreadPoolNums() {
-        return clientManageThreadPoolNums;
+        return brokerThreadNumbersConfig.getClientManageThreadPoolNums();
     }
 
     public void setClientManageThreadPoolNums(int clientManageThreadPoolNums) {
-        this.clientManageThreadPoolNums = clientManageThreadPoolNums;
+        this.brokerThreadNumbersConfig.setClientManageThreadPoolNums(clientManageThreadPoolNums);
     }
 
     public int getClientManagerThreadPoolQueueCapacity() {
@@ -981,11 +963,11 @@ public class BrokerConfig extends BrokerIdentity {
     }
 
     public int getConsumerManageThreadPoolNums() {
-        return consumerManageThreadPoolNums;
+        return brokerThreadNumbersConfig.getConsumerManageThreadPoolNums();
     }
 
     public void setConsumerManageThreadPoolNums(int consumerManageThreadPoolNums) {
-        this.consumerManageThreadPoolNums = consumerManageThreadPoolNums;
+        this.brokerThreadNumbersConfig.setConsumerManageThreadPoolNums(consumerManageThreadPoolNums);
     }
 
     public int getCommercialBaseCount() {
@@ -1069,11 +1051,11 @@ public class BrokerConfig extends BrokerIdentity {
     }
 
     public int getHeartbeatThreadPoolNums() {
-        return heartbeatThreadPoolNums;
+        return brokerThreadNumbersConfig.getHeartbeatThreadPoolNums();
     }
 
     public void setHeartbeatThreadPoolNums(int heartbeatThreadPoolNums) {
-        this.heartbeatThreadPoolNums = heartbeatThreadPoolNums;
+        this.brokerThreadNumbersConfig.setRecoverThreadPoolNums(heartbeatThreadPoolNums);
     }
 
     public long getWaitTimeMillsInHeartbeatQueue() {
@@ -1117,11 +1099,11 @@ public class BrokerConfig extends BrokerIdentity {
     }
 
     public int getEndTransactionThreadPoolNums() {
-        return endTransactionThreadPoolNums;
+        return brokerThreadNumbersConfig.getEndTransactionThreadPoolNums();
     }
 
     public void setEndTransactionThreadPoolNums(int endTransactionThreadPoolNums) {
-        this.endTransactionThreadPoolNums = endTransactionThreadPoolNums;
+        this.brokerThreadNumbersConfig.setEndTransactionThreadPoolNums(endTransactionThreadPoolNums);
     }
 
     public int getEndTransactionPoolQueueCapacity() {
@@ -1205,11 +1187,11 @@ public class BrokerConfig extends BrokerIdentity {
     }
 
     public int getLoadBalanceProcessorThreadPoolNums() {
-        return loadBalanceProcessorThreadPoolNums;
+        return brokerThreadNumbersConfig.getLoadBalanceProcessorThreadPoolNums();
     }
 
     public void setLoadBalanceProcessorThreadPoolNums(int loadBalanceProcessorThreadPoolNums) {
-        this.loadBalanceProcessorThreadPoolNums = loadBalanceProcessorThreadPoolNums;
+        this.brokerThreadNumbersConfig.setLoadBalanceProcessorThreadPoolNums(loadBalanceProcessorThreadPoolNums);
     }
 
     public boolean isServerLoadBalancerEnable() {
@@ -1477,11 +1459,11 @@ public class BrokerConfig extends BrokerIdentity {
     }
 
     public int getRecoverThreadPoolNums() {
-        return recoverThreadPoolNums;
+        return brokerThreadNumbersConfig.getRecoverThreadPoolNums();
     }
 
     public void setRecoverThreadPoolNums(int recoverThreadPoolNums) {
-        this.recoverThreadPoolNums = recoverThreadPoolNums;
+        this.brokerThreadNumbersConfig.setRecoverThreadPoolNums(recoverThreadPoolNums);
     }
 
     public boolean isFetchNameSrvAddrByDnsLookup() {
